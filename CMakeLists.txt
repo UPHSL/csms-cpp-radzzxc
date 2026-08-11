@@ -76,4 +76,6 @@ target_sources(${PROJECT_NAME}
 
 # ##############################################################################
 
+enable_testing()
 add_subdirectory(test)
+
