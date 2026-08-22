@@ -1,7 +1,14 @@
 cmake_minimum_required(VERSION 3.5)
 project(csms_cpp_test CXX)
 
-add_executable(${PROJECT_NAME} test_main.cc)
+add_executable(${PROJECT_NAME} 
+    test_main.cc
+    test_resident.cc
+    ../models/Resident.cc
+)
+
+target_include_directories(${PROJECT_NAME} PRIVATE 
+${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 # ##############################################################################
 # If you include the drogon source code locally in your project, use this method
