@@ -4,7 +4,9 @@ project(csms_cpp_test CXX)
 add_executable(${PROJECT_NAME} 
     test_main.cc
     test_resident.cc
+    test_resident_validator.cc
     ../models/Resident.cc
+    ../models/ResidentValidator.cc
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
