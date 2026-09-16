@@ -6,16 +6,19 @@ add_executable(${PROJECT_NAME}
     test_resident.cc
     test_resident_validator.cc
     test_resident_repository.cc
+    test_resident_registration_service.cc
     ../models/Resident.cc
     ../models/ResidentValidator.cc
     ../repositories/ResidentRepository.cc
     ../database/DatabaseConnection.cc
+    ../services/ResidentRegistrationService.cc
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../repositories
-    ${CMAKE_CURRENT_SOURCE_DIR}/../database)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../database
+    ${CMAKE_CURRENT_SOURCE_DIR}/../services)
 
 # ##############################################################################
 # If you include the drogon source code locally in your project, use this method
