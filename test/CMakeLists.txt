@@ -7,11 +7,13 @@ add_executable(${PROJECT_NAME}
     test_resident_validator.cc
     test_resident_repository.cc
     test_resident_registration_service.cc
+    test_resident_query_service.cc
     ../models/Resident.cc
     ../models/ResidentValidator.cc
     ../repositories/ResidentRepository.cc
     ../database/DatabaseConnection.cc
     ../services/ResidentRegistrationService.cc
+    ../services/ResidentQueryService.cc
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
@@ -30,3 +32,4 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon SQLite3_lib)
 
 ParseAndAddDrogonTests(${PROJECT_NAME})
+
