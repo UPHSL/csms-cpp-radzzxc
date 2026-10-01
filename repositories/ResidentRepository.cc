@@ -238,4 +238,36 @@ bool ResidentRepository::update(const Resident& resident)
     return sqlite3_changes(db) > 0;
 }
 
+bool ResidentRepository::deactivateById(int residentId)
+{
+    sqlite3* db = dbConn_->getRawHandle();
+
+    // SQL query modifies only the status field for the targeted ID
+    // ID, personal details, and contact number are preserved
+    const char* sql = "UPDATE residents SET status = ? WHERE id = ?;";
+
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        throw std::runtime_error(std::string("Failed to prepare deactivation statement: ") + sqlite3_errmsg(db));
+    }
+
+    sqlite3_bind_text(stmt, 1, "Inactive", -1, SQLITE_STATIC);
+    sqlite3_bind_int(stmt, 2, residentId);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE)
+    {
+        std::string error = sqlite3_errmsg(db);
+        sqlite3_finalize(stmt);
+        throw std::runtime_error("Failed to execute deactivation statement: " + error);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return sqlite3_changes(db) > 0;
+}
+
 } // namespace csms
+

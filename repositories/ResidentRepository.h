@@ -29,6 +29,10 @@ public:
     // Returns true if a record was updated, false if no matching row existed.
     bool update(const Resident& resident);
 
+    // T07: Soft-deactivates an existing resident record by setting status = 'Inactive'.
+    // Preserves id, personal, and contact information. Returns true if a row was updated.
+    bool deactivateById(int residentId);
+
 private:
     std::shared_ptr<DatabaseConnection> dbConn_;
 
