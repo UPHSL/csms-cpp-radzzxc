@@ -21,11 +21,13 @@ public:
     Resident save(const Resident& resident);
     std::optional<Resident> findById(int residentId);
 
-    // T05: Query all persisted residents ordered by lastName ASC, firstName ASC, id ASC
+    // T05: Listing & search
     std::vector<Resident> findAll();
-
-    // T05: Case-insensitive partial search on firstName or lastName with same deterministic ordering
     std::vector<Resident> searchByName(const std::string& searchTerm);
+
+    // T06: Updates an existing resident record in SQLite by ID.
+    // Returns true if a record was updated, false if no matching row existed.
+    bool update(const Resident& resident);
 
 private:
     std::shared_ptr<DatabaseConnection> dbConn_;

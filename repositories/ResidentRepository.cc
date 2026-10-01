@@ -192,4 +192,50 @@ std::vector<Resident> ResidentRepository::searchByName(const std::string& search
     return residents;
 }
 
+bool ResidentRepository::update(const Resident& resident)
+{
+    // A resident must have an assigned ID to be updated
+    if (!resident.getId().has_value())
+    {
+        throw std::invalid_argument("Cannot update a resident without an assigned ID.");
+    }
+
+    sqlite3* db = dbConn_->getRawHandle();
+
+    // SQL query modifies only the permitted fields for the targeted ID
+    // id and status are explicitly excluded from the SET clause
+    const char* updateSql =
+        "UPDATE residents "
+        "SET first_name = ?, last_name = ?, address = ?, contact_number = ?, email = ? "
+        "WHERE id = ?;";
+
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, updateSql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        throw std::runtime_error(std::string("Failed to prepare update statement: ") + sqlite3_errmsg(db));
+    }
+
+    // Safely bind permitted editable values using parameter binding
+    sqlite3_bind_text(stmt, 1, resident.getFirstName().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, resident.getLastName().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, resident.getAddress().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 4, resident.getContactNumber().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 5, resident.getEmail().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 6, resident.getId().value());
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE)
+    {
+        std::string error = sqlite3_errmsg(db);
+        sqlite3_finalize(stmt);
+        throw std::runtime_error("Failed to execute update statement: " + error);
+    }
+
+    sqlite3_finalize(stmt);
+
+    // sqlite3_changes reports how many rows were actually modified
+    return sqlite3_changes(db) > 0;
+}
+
 } // namespace csms
