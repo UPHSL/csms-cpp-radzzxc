@@ -79,6 +79,24 @@ void DatabaseConnection::initializeSchema()
         sqlite3_free(errMsg);
         throw std::runtime_error("Failed to initialize residents table: " + error);
     }
+    
+    const char* createServiceRequestsTableSql =
+        "CREATE TABLE IF NOT EXISTS service_requests ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "resident_id INTEGER NOT NULL, "
+        "service_type TEXT NOT NULL, "
+        "description TEXT NOT NULL, "
+        "date_requested TEXT NOT NULL, "
+        "status TEXT NOT NULL DEFAULT 'Pending'"
+        ");";
+
+    rc = sqlite3_exec(db_, createServiceRequestsTableSql, nullptr, nullptr, &errMsg);
+    if (rc != SQLITE_OK)
+    {
+        std::string error = errMsg ? errMsg : "Unknown error";
+        sqlite3_free(errMsg);
+        throw std::runtime_error("Failed to initialize service_requests table: " + error);
+    }
 }
 
 } // namespace csms
