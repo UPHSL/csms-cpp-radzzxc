@@ -38,3 +38,11 @@ logs/
 # Operating-system files
 .DS_Store
 Thumbs.db
+
+# SQLite database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads / runtime-generated files
+uploads/
