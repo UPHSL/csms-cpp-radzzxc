@@ -65,5 +65,5 @@ My implementation enforces the following lifecycle state transitions:
 - **C++20 Standard Documentation (cppreference.com):** Referenced for std::optional and clean move semantics.
 - **Drogon Framework Test Documentation:** Referenced for writing isolated unit test macros (`DROGON_TEST` and `CHECK`).
 - **SQLite C/C++ Interface:** Used for prepared statement binding and checking row change counts via `sqlite3_changes()`.
-- **Google Antigravity AI Assistant:** Used as a pair programming assistant to discuss architectural separation of concerns, verify test coverage, and format documentation.
-- **Claude Code (AI coding assistant):** Used to review the finished implementation against the T10 ticket, tighten the assertions in the nonexistent-ID and invalid-transition tests, and correct this document.
+- **Google Gemini:** Used as a pair programming assistant to discuss architectural separation of concerns, verify test coverage, and format documentation.
+- **Claude Code:** Used to review the finished implementation against the T10 ticket.
