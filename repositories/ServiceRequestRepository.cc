@@ -109,4 +109,33 @@ std::optional<ServiceRequest> ServiceRequestRepository::findById(int id)
     return std::nullopt;
 }
 
+bool ServiceRequestRepository::updateStatus(int id, const std::string& newStatus)
+{
+    sqlite3* db = dbConn_->getRawHandle();
+
+    const char* sql = "UPDATE service_requests SET status = ? WHERE id = ?;";
+
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        throw std::runtime_error(std::string("Failed to prepare update status statement: ") + sqlite3_errmsg(db));
+    }
+
+    sqlite3_bind_text(stmt, 1, newStatus.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, id);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE)
+    {
+        std::string error = sqlite3_errmsg(db);
+        sqlite3_finalize(stmt);
+        throw std::runtime_error("Failed to execute update status statement: " + error);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return sqlite3_changes(db) > 0;
+}
+
 } // namespace csms
