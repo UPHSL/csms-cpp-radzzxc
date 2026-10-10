@@ -18,6 +18,7 @@ public:
 
     ServiceRequest save(const ServiceRequest& request);
     std::optional<ServiceRequest> findById(int id);
+    bool updateStatus(int id, const std::string& newStatus);
 
 private:
     std::shared_ptr<DatabaseConnection> dbConn_;
