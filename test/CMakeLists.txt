@@ -13,6 +13,7 @@ add_executable(${PROJECT_NAME}
     test_service_request.cc
     test_service_request_submission.cc
     test_service_request_status.cc
+    test_service_request_query_service.cc
     ../models/Resident.cc
     ../models/ResidentValidator.cc
     ../models/ServiceRequest.cc
@@ -26,6 +27,7 @@ add_executable(${PROJECT_NAME}
     ../services/ResidentDeactivationService.cc
     ../services/ServiceRequestSubmissionService.cc
     ../services/ServiceRequestStatusService.cc
+    ../services/ServiceRequestQueryService.cc
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE 

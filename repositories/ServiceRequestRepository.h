@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <optional>
 #include <memory>
 #include <sqlite3.h>
@@ -19,6 +20,8 @@ public:
     ServiceRequest save(const ServiceRequest& request);
     std::optional<ServiceRequest> findById(int id);
     bool updateStatus(int id, const std::string& newStatus);
+    std::vector<ServiceRequest> findAll();
+    std::vector<ServiceRequest> search(const std::string& searchTerm, const std::optional<std::string>& statusFilter = std::nullopt);
 
 private:
     std::shared_ptr<DatabaseConnection> dbConn_;
