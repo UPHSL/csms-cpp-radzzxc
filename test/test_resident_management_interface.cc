@@ -69,8 +69,11 @@ DROGON_TEST(ResidentManagementPageLoadsSuccessfully)
     CHECK(resp->getContentType() == drogon::CT_TEXT_HTML);
 
     std::string body(resp->getBody());
-    CHECK(body.find("Resident Management Registry") != std::string::npos);
-    CHECK(body.find("Register New Resident") != std::string::npos);
+    CHECK(body.find("<h1 class=\"serif\">Resident Management</h1>") != std::string::npos);
+    CHECK(body.find("href=\"/residents/register\"") != std::string::npos);
+    CHECK(body.find("name=\"search\"") != std::string::npos);
+    // Empty registry renders a friendly message, not an error
+    CHECK(body.find("No Residents found.") != std::string::npos);
 }
 
 // -----------------------------------------------------------------------------
@@ -186,7 +189,7 @@ DROGON_TEST(RegistrationFormIsAccessible)
     CHECK(resp->getStatusCode() == drogon::k200OK);
     std::string body(resp->getBody());
 
-    CHECK(body.find("Register New Resident") != std::string::npos);
+    CHECK(body.find("<h1 class=\"serif\">Register resident</h1>") != std::string::npos);
     CHECK(body.find("name=\"firstName\"") != std::string::npos);
     CHECK(body.find("name=\"lastName\"") != std::string::npos);
     CHECK(body.find("name=\"address\"") != std::string::npos);
@@ -266,8 +269,12 @@ DROGON_TEST(InvalidRegistrationShowsValidationFeedbackAndDoesNotPersist)
     CHECK(postResp->getStatusCode() == drogon::k200OK);
     std::string body(postResp->getBody());
 
-    CHECK(body.find("There is a problem with the submitted form") != std::string::npos);
-    CHECK(body.find("contactNumber") != std::string::npos);
+    CHECK(body.find("Please fix the following:") != std::string::npos);
+    // The readable T02 message must be shown (not just the raw field name)
+    CHECK(body.find("Contact number must follow the format 09XXXXXXXXX.") != std::string::npos);
+    // Only the invalid field is reported, and that field is highlighted
+    CHECK(body.find("First name is required.") == std::string::npos);
+    CHECK(body.find("id=\"contactNumber\" name=\"contactNumber\" value=\"invalid_phone\" autocomplete=\"tel\" required aria-invalid=\"true\"") != std::string::npos);
 
     // Verify non-sensitive inputs were preserved in form
     CHECK(body.find("value=\"Clara\"") != std::string::npos);
@@ -311,7 +318,8 @@ DROGON_TEST(EditFormDisplaysExistingResidentInformation)
     // ID and status must not be editable inputs
     CHECK(body.find("name=\"id\"") == std::string::npos);
     CHECK(body.find("name=\"status\"") == std::string::npos);
-    CHECK(body.find("Read-only") != std::string::npos);
+    CHECK(body.find("Resident ID and status cannot be changed here.") != std::string::npos);
+    CHECK(body.find("<span class=\"status on\">Active</span>") != std::string::npos);
 }
 
 // -----------------------------------------------------------------------------
@@ -383,12 +391,18 @@ DROGON_TEST(InvalidUpdateDoesNotModifyResident)
 
     CHECK(resp->getStatusCode() == drogon::k200OK);
     std::string body(resp->getBody());
-    CHECK(body.find("There is a problem with the submitted form") != std::string::npos);
+    CHECK(body.find("Please fix the following:") != std::string::npos);
+    CHECK(body.find("Contact number must follow the format 09XXXXXXXXX.") != std::string::npos);
 
-    // Verify persistence unchanged
+    // Verify persistence unchanged (all editable fields, plus status)
     auto unchangedOpt = repo->findById(id);
     CHECK(unchangedOpt.has_value());
+    CHECK(unchangedOpt->getFirstName() == "Juan");
+    CHECK(unchangedOpt->getLastName() == "Dela Cruz");
+    CHECK(unchangedOpt->getAddress() == "123 Rizal St");
     CHECK(unchangedOpt->getContactNumber() == "09171234567");
+    CHECK(unchangedOpt->getEmail() == "juan@example.com");
+    CHECK(unchangedOpt->getStatus() == "Active");
 }
 
 // -----------------------------------------------------------------------------
@@ -410,7 +424,8 @@ DROGON_TEST(MissingResidentEditIsHandledSafely)
 
     CHECK(resp->getStatusCode() == drogon::k404NotFound);
     std::string body(resp->getBody());
-    CHECK(body.find("404 - Resident Record Not Found") != std::string::npos);
+    CHECK(body.find("Resident not found") != std::string::npos);
+    CHECK(body.find("href=\"/residents\"") != std::string::npos);
 }
 
 // -----------------------------------------------------------------------------
@@ -442,6 +457,25 @@ DROGON_TEST(ActiveResidentCanBeDeactivatedThroughInterface)
     CHECK(deactivatedOpt.has_value());
     CHECK(deactivatedOpt->getStatus() == "Inactive");
     CHECK(deactivatedOpt->getFirstName() == "Juan");
+
+    // A repeated (direct) deactivation stays safe and reports that nothing changed
+    auto repeatResp = dispatchSync([&](auto&& cb) {
+        controller.deactivateResident(req, std::move(cb), std::to_string(id));
+    });
+    CHECK(repeatResp->getStatusCode() == drogon::k303SeeOther);
+    CHECK(repeatResp->getHeader("Location") == "/residents?msg=already-inactive");
+    CHECK(repo->findById(id)->getStatus() == "Inactive");
+
+    auto listReq = drogon::HttpRequest::newHttpRequest();
+    listReq->setPath("/residents");
+    listReq->setMethod(drogon::Get);
+    listReq->setParameter("msg", "already-inactive");
+    auto listResp = dispatchSync([&](auto&& cb) {
+        controller.index(listReq, std::move(cb));
+    });
+    std::string listBody(listResp->getBody());
+    CHECK(listBody.find("This resident is already inactive. No changes were made.") != std::string::npos);
+    CHECK(listBody.find("Resident deactivated successfully.") == std::string::npos);
 }
 
 // -----------------------------------------------------------------------------
@@ -470,8 +504,10 @@ DROGON_TEST(InactiveResidentRemainsVisible)
     std::string body(resp->getBody());
 
     CHECK(body.find("Juan Dela Cruz") != std::string::npos);
-    CHECK(body.find("Inactive") != std::string::npos);
+    CHECK(body.find("<span class=\"status off\">Inactive</span>") != std::string::npos);
     CHECK(body.find("Deactivated") != std::string::npos);
+    // No Deactivate button is offered for an already-Inactive resident
+    CHECK(body.find("/deactivate") == std::string::npos);
 }
 
 // -----------------------------------------------------------------------------

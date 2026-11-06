@@ -49,6 +49,10 @@ void ResidentController::index(
     {
         successMessage = "Resident deactivated successfully.";
     }
+    else if (msgKey == "already-inactive")
+    {
+        successMessage = "This resident is already inactive. No changes were made.";
+    }
 
     std::string html = ResidentView::renderIndex(residents, searchTerm, successMessage);
 
@@ -250,8 +254,9 @@ void ResidentController::deactivateResident(
         return;
     }
 
-    // Post/Redirect/Get pattern
-    auto resp = drogon::HttpResponse::newRedirectionResponse("/residents?msg=deactivated", drogon::k303SeeOther);
+    // Post/Redirect/Get pattern. A repeated request is safe (T07) but gets its own message.
+    const char* target = result.alreadyInactive ? "/residents?msg=already-inactive" : "/residents?msg=deactivated";
+    auto resp = drogon::HttpResponse::newRedirectionResponse(target, drogon::k303SeeOther);
     callback(resp);
 }
 

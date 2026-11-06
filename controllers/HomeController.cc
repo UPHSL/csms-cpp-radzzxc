@@ -77,6 +77,29 @@ void HomeController::asyncHandleHttpRequest(
             margin-bottom: 0;
             font-weight: 700;
         }
+
+        .actions {
+            margin-top: 2rem;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 22px;
+            border-radius: 999px;
+            background: #a8492a;
+            color: white;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .button:hover {
+            background: #8f3c21;
+        }
+
+        .button:focus-visible {
+            outline: 3px solid #111;
+            outline-offset: 3px;
+        }
     </style>
 </head>
 
@@ -108,6 +131,10 @@ void HomeController::asyncHandleHttpRequest(
         </section>
 
         <p class="status">Environment status: Ready</p>
+
+        <p class="actions">
+            <a class="button" href="/residents">Open Resident Management</a>
+        </p>
     </main>
 </body>
 </html>
