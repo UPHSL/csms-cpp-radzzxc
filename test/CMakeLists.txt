@@ -16,6 +16,7 @@ add_executable(${PROJECT_NAME}
     test_service_request_query_service.cc
     test_resident_management_interface.cc
     test_service_request_management_interface.cc
+    test_dashboard.cc
     ../models/Resident.cc
     ../models/ResidentValidator.cc
     ../models/ServiceRequest.cc
@@ -30,12 +31,14 @@ add_executable(${PROJECT_NAME}
     ../services/ServiceRequestSubmissionService.cc
     ../services/ServiceRequestStatusService.cc
     ../services/ServiceRequestQueryService.cc
+    ../services/DashboardService.cc
     ../controllers/ResidentController.cc
     ../controllers/ServiceRequestController.cc
+    ../controllers/DashboardController.cc
     ../views/Layout.cc
 )
 
-# Compile the CSP templates in ../views (T12 Resident and T13 Service Request pages)
+# Compile the CSP templates in ../views (T12 Resident, T13 Service Request and T14 Dashboard pages)
 # into this test executable too, so controller tests render the real views
 drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/../views
                     ${CMAKE_CURRENT_BINARY_DIR})

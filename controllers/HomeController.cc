@@ -136,6 +136,7 @@ void HomeController::asyncHandleHttpRequest(
         <p class="status">Environment status: Ready</p>
 
         <p class="actions">
+            <a class="button" href="/dashboard">Open Dashboard</a>
             <a class="button" href="/residents">Open Resident Management</a>
             <a class="button" href="/service-requests">Open Service Request Management</a>
         </p>
