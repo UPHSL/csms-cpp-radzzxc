@@ -138,4 +138,101 @@ bool ServiceRequestRepository::updateStatus(int id, const std::string& newStatus
     return sqlite3_changes(db) > 0;
 }
 
+std::vector<ServiceRequest> ServiceRequestRepository::findAll()
+{
+    sqlite3* db = dbConn_->getRawHandle();
+
+    const char* sql =
+        "SELECT id, resident_id, service_type, description, date_requested, status "
+        "FROM service_requests "
+        "ORDER BY date_requested DESC, id DESC;";
+
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        throw std::runtime_error(std::string("Unable to prepare ServiceRequest list query: ") + sqlite3_errmsg(db));
+    }
+
+    std::vector<ServiceRequest> requests;
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
+    {
+        requests.push_back(mapServiceRequest(stmt));
+    }
+
+    sqlite3_finalize(stmt);
+    return requests;
+}
+
+std::vector<ServiceRequest> ServiceRequestRepository::search(const std::string& searchTerm, const std::optional<std::string>& statusFilter)
+{
+    sqlite3* db = dbConn_->getRawHandle();
+
+    std::string sql;
+    bool hasText = !searchTerm.empty();
+    bool hasStatus = statusFilter.has_value() && !statusFilter.value().empty();
+
+    if (!hasText && !hasStatus)
+    {
+        return findAll();
+    }
+
+    if (hasText && hasStatus)
+    {
+        sql = "SELECT id, resident_id, service_type, description, date_requested, status "
+              "FROM service_requests "
+              "WHERE (LOWER(service_type) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?)) "
+              "  AND status = ? "
+              "ORDER BY date_requested DESC, id DESC;";
+    }
+    else if (hasText && !hasStatus)
+    {
+        sql = "SELECT id, resident_id, service_type, description, date_requested, status "
+              "FROM service_requests "
+              "WHERE (LOWER(service_type) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?)) "
+              "ORDER BY date_requested DESC, id DESC;";
+    }
+    else // !hasText && hasStatus
+    {
+        sql = "SELECT id, resident_id, service_type, description, date_requested, status "
+              "FROM service_requests "
+              "WHERE status = ? "
+              "ORDER BY date_requested DESC, id DESC;";
+    }
+
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        throw std::runtime_error(std::string("Unable to prepare ServiceRequest search query: ") + sqlite3_errmsg(db));
+    }
+
+    if (hasText && hasStatus)
+    {
+        std::string pattern = "%" + searchTerm + "%";
+        sqlite3_bind_text(stmt, 1, pattern.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, pattern.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, statusFilter.value().c_str(), -1, SQLITE_TRANSIENT);
+    }
+    else if (hasText && !hasStatus)
+    {
+        std::string pattern = "%" + searchTerm + "%";
+        sqlite3_bind_text(stmt, 1, pattern.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, pattern.c_str(), -1, SQLITE_TRANSIENT);
+    }
+    else // !hasText && hasStatus
+    {
+        sqlite3_bind_text(stmt, 1, statusFilter.value().c_str(), -1, SQLITE_TRANSIENT);
+    }
+
+    std::vector<ServiceRequest> requests;
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
+    {
+        requests.push_back(mapServiceRequest(stmt));
+    }
+
+    sqlite3_finalize(stmt);
+    return requests;
+}
+
 } // namespace csms
