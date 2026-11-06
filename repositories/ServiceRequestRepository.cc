@@ -4,6 +4,47 @@
 namespace csms
 {
 
+namespace
+{
+
+// T11 ordering rule (newest date first, then highest id). Shared by listing, search,
+// and the T14 recent-requests query so they can never drift apart.
+const std::string kNewestFirst = "ORDER BY date_requested DESC, id DESC";
+
+// T14: Runs a single-value COUNT query, optionally binding one text parameter
+int runCountQuery(sqlite3* db, const char* sql, const std::string* textParam)
+{
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        throw std::runtime_error(std::string("Unable to prepare ServiceRequest count query: ") + sqlite3_errmsg(db));
+    }
+
+    if (textParam != nullptr)
+    {
+        sqlite3_bind_text(stmt, 1, textParam->c_str(), -1, SQLITE_TRANSIENT);
+    }
+
+    int count = 0;
+    rc = sqlite3_step(stmt);
+    if (rc == SQLITE_ROW)
+    {
+        count = sqlite3_column_int(stmt, 0);
+    }
+    else if (rc != SQLITE_DONE)
+    {
+        std::string error = sqlite3_errmsg(db);
+        sqlite3_finalize(stmt);
+        throw std::runtime_error("Failed to execute ServiceRequest count query: " + error);
+    }
+
+    sqlite3_finalize(stmt);
+    return count;
+}
+
+} // namespace
+
 ServiceRequestRepository::ServiceRequestRepository(const std::string& dbPath)
     : dbConn_(std::make_shared<DatabaseConnection>(dbPath))
 {
@@ -142,13 +183,12 @@ std::vector<ServiceRequest> ServiceRequestRepository::findAll()
 {
     sqlite3* db = dbConn_->getRawHandle();
 
-    const char* sql =
+    const std::string sql =
         "SELECT id, resident_id, service_type, description, date_requested, status "
-        "FROM service_requests "
-        "ORDER BY date_requested DESC, id DESC;";
+        "FROM service_requests " + kNewestFirst + ";";
 
     sqlite3_stmt* stmt = nullptr;
-    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+    int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
     if (rc != SQLITE_OK)
     {
         throw std::runtime_error(std::string("Unable to prepare ServiceRequest list query: ") + sqlite3_errmsg(db));
@@ -183,21 +223,21 @@ std::vector<ServiceRequest> ServiceRequestRepository::search(const std::string& 
               "FROM service_requests "
               "WHERE (LOWER(service_type) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?)) "
               "  AND status = ? "
-              "ORDER BY date_requested DESC, id DESC;";
+              + kNewestFirst + ";";
     }
     else if (hasText && !hasStatus)
     {
         sql = "SELECT id, resident_id, service_type, description, date_requested, status "
               "FROM service_requests "
               "WHERE (LOWER(service_type) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?)) "
-              "ORDER BY date_requested DESC, id DESC;";
+              + kNewestFirst + ";";
     }
     else // !hasText && hasStatus
     {
         sql = "SELECT id, resident_id, service_type, description, date_requested, status "
               "FROM service_requests "
               "WHERE status = ? "
-              "ORDER BY date_requested DESC, id DESC;";
+              + kNewestFirst + ";";
     }
 
     sqlite3_stmt* stmt = nullptr;
@@ -226,6 +266,48 @@ std::vector<ServiceRequest> ServiceRequestRepository::search(const std::string& 
     }
 
     std::vector<ServiceRequest> requests;
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
+    {
+        requests.push_back(mapServiceRequest(stmt));
+    }
+
+    sqlite3_finalize(stmt);
+    return requests;
+}
+
+int ServiceRequestRepository::countAll()
+{
+    return runCountQuery(dbConn_->getRawHandle(), "SELECT COUNT(*) FROM service_requests;", nullptr);
+}
+
+int ServiceRequestRepository::countByStatus(const std::string& status)
+{
+    return runCountQuery(dbConn_->getRawHandle(), "SELECT COUNT(*) FROM service_requests WHERE status = ?;", &status);
+}
+
+std::vector<ServiceRequest> ServiceRequestRepository::findRecent(int limit)
+{
+    std::vector<ServiceRequest> requests;
+    if (limit <= 0)
+    {
+        return requests;
+    }
+
+    sqlite3* db = dbConn_->getRawHandle();
+
+    const std::string sql =
+        "SELECT id, resident_id, service_type, description, date_requested, status "
+        "FROM service_requests " + kNewestFirst + " LIMIT ?;";
+
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        throw std::runtime_error(std::string("Unable to prepare recent ServiceRequest query: ") + sqlite3_errmsg(db));
+    }
+
+    sqlite3_bind_int(stmt, 1, limit);
+
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
     {
         requests.push_back(mapServiceRequest(stmt));

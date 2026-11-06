@@ -23,6 +23,17 @@ public:
     std::vector<ServiceRequest> findAll();
     std::vector<ServiceRequest> search(const std::string& searchTerm, const std::optional<std::string>& statusFilter = std::nullopt);
 
+    // T14: Aggregate queries for the dashboard. SQLite does the counting (COUNT(*)),
+    // so no Service Request rows are loaded into memory.
+    // Counts every persisted service request, whatever its status.
+    int countAll();
+    // Counts persisted service requests whose current status equals the given value (e.g. "Pending").
+    int countByStatus(const std::string& status);
+
+    // T14: The newest `limit` service requests, using the same T11 ordering as findAll()
+    // (date_requested DESC, then id DESC) with SQL LIMIT. limit <= 0 returns an empty list.
+    std::vector<ServiceRequest> findRecent(int limit);
+
 private:
     std::shared_ptr<DatabaseConnection> dbConn_;
 

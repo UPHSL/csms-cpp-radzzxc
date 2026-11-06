@@ -269,5 +269,46 @@ bool ResidentRepository::deactivateById(int residentId)
     return sqlite3_changes(db) > 0;
 }
 
-} // namespace csms
+// T14: Runs a single-value COUNT query, optionally binding one text parameter
+static int runCountQuery(sqlite3* db, const char* sql, const std::string* textParam)
+{
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        throw std::runtime_error(std::string("Unable to prepare Resident count query: ") + sqlite3_errmsg(db));
+    }
 
+    if (textParam != nullptr)
+    {
+        sqlite3_bind_text(stmt, 1, textParam->c_str(), -1, SQLITE_TRANSIENT);
+    }
+
+    int count = 0;
+    rc = sqlite3_step(stmt);
+    if (rc == SQLITE_ROW)
+    {
+        count = sqlite3_column_int(stmt, 0);
+    }
+    else if (rc != SQLITE_DONE)
+    {
+        std::string error = sqlite3_errmsg(db);
+        sqlite3_finalize(stmt);
+        throw std::runtime_error("Failed to execute Resident count query: " + error);
+    }
+
+    sqlite3_finalize(stmt);
+    return count;
+}
+
+int ResidentRepository::countAll()
+{
+    return runCountQuery(dbConn_->getRawHandle(), "SELECT COUNT(*) FROM residents;", nullptr);
+}
+
+int ResidentRepository::countByStatus(const std::string& status)
+{
+    return runCountQuery(dbConn_->getRawHandle(), "SELECT COUNT(*) FROM residents WHERE status = ?;", &status);
+}
+
+} // namespace csms

@@ -155,6 +155,31 @@ td.desc { min-width: 10em; color: var(--muted); }
   .fields dd { margin-bottom: 10px; }
   .workflow { justify-content: flex-start; flex-wrap: wrap; }
 }
+
+/* ---- Dashboard (T14) ---- */
+.dash-top { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 18px; margin-bottom: 18px; }
+.dash-card { padding: 20px 22px; margin-bottom: 18px; }
+.dash-top .dash-card { margin-bottom: 0; }
+.dash-head { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.dash-title { font-size: 22px; line-height: 1.2; margin: 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 0; }
+.stat { background: #f6f1e7; border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.stat.total { background: #fff; border: 1px solid var(--line); }
+.stat dt { font-size: 13px; color: var(--muted); font-weight: 600; }
+.stat dd { margin: 6px 0 0; font-size: 30px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.dash-note { margin: 12px 0 0; }
+.open-card { display: flex; flex-direction: column; background: #fbf3ea; border-color: #ecd6c4; }
+.open-value { margin: 10px 0 0; font-size: 52px; font-weight: 600; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.open-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 14px; }
+.recent-head { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.recent-head .sub { margin-top: 2px; }
+@media (max-width: 720px) {
+  .dash-top { grid-template-columns: 1fr; }
+  .dash-card { padding: 18px 16px; }
+  .recent-head { padding: 16px; }
+  .stat dd { font-size: 26px; }
+  .open-value { font-size: 44px; }
+}
 )CSS";
 
 } // namespace
@@ -179,6 +204,7 @@ std::string pageStart(const std::string& pageTitle, const std::string& activeNav
        << "<header class=\"topbar\"><div class=\"wrap\">\n"
        << "  <a class=\"brand\" href=\"/\"><b>CSMS</b><span>Community Services Management System</span></a>\n"
        << "  <nav class=\"nav\" aria-label=\"Main\">\n"
+       << navLink("dashboard", "/dashboard", "Dashboard")
        << navLink("residents", "/residents", "Residents")
        << navLink("service-requests", "/service-requests", "Service Requests")
        << "  </nav>\n"

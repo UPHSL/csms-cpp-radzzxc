@@ -4,13 +4,13 @@
 #include <string>
 
 // Shared page shell and small display helpers used by every CSMS page
-// (T12 Resident views and the T13 Service Request CSP templates).
+// (T12 Resident views, the T13 Service Request CSP templates, and the T14 Dashboard).
 // Presentation only: no business rules live here.
 namespace csms::layout
 {
 
 // Opening HTML: <head> with the shared styles, the top navigation, and <main>.
-// activeNav is "residents", "service-requests", or "" for none.
+// activeNav is "dashboard", "residents", "service-requests", or "" for none.
 std::string pageStart(const std::string& pageTitle, const std::string& activeNav);
 
 // Closing HTML for a page started with pageStart().

@@ -33,6 +33,13 @@ public:
     // Preserves id, personal, and contact information. Returns true if a row was updated.
     bool deactivateById(int residentId);
 
+    // T14: Aggregate queries for the dashboard. SQLite does the counting (COUNT(*)),
+    // so no Resident rows are loaded into memory.
+    // Counts every persisted resident, Active and Inactive alike.
+    int countAll();
+    // Counts persisted residents whose status equals the given value (e.g. "Active").
+    int countByStatus(const std::string& status);
+
 private:
     std::shared_ptr<DatabaseConnection> dbConn_;
 
