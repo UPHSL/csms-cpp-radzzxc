@@ -41,10 +41,9 @@ public:
     static std::string renderNotFound(const std::string& message = "The requested resident record could not be found.");
 
 private:
-    // Shared page shell: head, styles, top bar and navigation
+    // Wraps page content in the shared CSMS layout (see Layout.h)
     static std::string renderLayout(
         const std::string& pageTitle,
-        const std::string& activeNav,
         const std::string& content
     );
 

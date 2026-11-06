@@ -80,6 +80,9 @@ void HomeController::asyncHandleHttpRequest(
 
         .actions {
             margin-top: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
         .button {
@@ -134,6 +137,7 @@ void HomeController::asyncHandleHttpRequest(
 
         <p class="actions">
             <a class="button" href="/residents">Open Resident Management</a>
+            <a class="button" href="/service-requests">Open Service Request Management</a>
         </p>
     </main>
 </body>
