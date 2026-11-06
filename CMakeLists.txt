@@ -53,6 +53,7 @@ aux_source_directory(models MODEL_SRC)
 aux_source_directory(repositories REPO_SRC)
 aux_source_directory(database DB_SRC)
 aux_source_directory(services SERVICE_SRC)
+aux_source_directory(views VIEW_SRC)
 
 drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
                     ${CMAKE_CURRENT_BINARY_DIR})
@@ -69,7 +70,8 @@ target_include_directories(${PROJECT_NAME}
                                    ${CMAKE_CURRENT_SOURCE_DIR}/models
                                    ${CMAKE_CURRENT_SOURCE_DIR}/repositories
                                    ${CMAKE_CURRENT_SOURCE_DIR}/database
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/services)
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/services
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/views)
 
 target_sources(${PROJECT_NAME}
                PRIVATE
@@ -80,7 +82,8 @@ target_sources(${PROJECT_NAME}
                ${MODEL_SRC}
                ${REPO_SRC}
                ${DB_SRC}
-               ${SERVICE_SRC})
+               ${SERVICE_SRC}
+               ${VIEW_SRC})
 # ##############################################################################
 # uncomment the following line for dynamically loading views 
 # set_property(TARGET ${PROJECT_NAME} PROPERTY ENABLE_EXPORTS ON)
