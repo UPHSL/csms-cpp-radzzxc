@@ -15,6 +15,7 @@ add_executable(${PROJECT_NAME}
     test_service_request_status.cc
     test_service_request_query_service.cc
     test_resident_management_interface.cc
+    test_service_request_management_interface.cc
     ../models/Resident.cc
     ../models/ResidentValidator.cc
     ../models/ServiceRequest.cc
@@ -30,8 +31,15 @@ add_executable(${PROJECT_NAME}
     ../services/ServiceRequestStatusService.cc
     ../services/ServiceRequestQueryService.cc
     ../controllers/ResidentController.cc
+    ../controllers/ServiceRequestController.cc
     ../views/ResidentView.cc
+    ../views/Layout.cc
 )
+
+# Compile the CSP templates in ../views (T13) into this test executable too,
+# so controller tests render the real views
+drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/../views
+                    ${CMAKE_CURRENT_BINARY_DIR})
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/..

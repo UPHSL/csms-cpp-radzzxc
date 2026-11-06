@@ -1,0 +1,62 @@
+<%inc
+#include <optional>
+#include <string>
+#include <vector>
+#include "models/ServiceRequest.h"
+#include "services/ServiceRequestStatusService.h"
+#include "views/Layout.h"
+%>
+<%c++
+// T13 Service Request details page with the workflow actions T10 allows from the current status.
+// Data: request (std::optional<ServiceRequest>), successMessage, errorMessage
+using csms::layout::escape;
+const auto& requestOpt = @@.get<std::optional<csms::ServiceRequest>>("request");
+const auto& successMessage = @@.get<std::string>("successMessage");
+const auto& errorMessage = @@.get<std::string>("errorMessage");
+struct WorkflowAction { std::string path; std::string label; std::string target; std::string style; };
+const std::vector<WorkflowAction> workflowActions = {
+    {"start", "Start Processing", "In Progress", "btn-primary"},
+    {"complete", "Complete", "Completed", "btn-primary"},
+    {"cancel", "Cancel request", "Cancelled", "btn-quiet"},
+};
+$$ << csms::layout::pageStart("Service Request", "service-requests");
+if (requestOpt) {
+    const csms::ServiceRequest& r = *requestOpt;
+    const std::string id = r.getId() ? std::to_string(*r.getId()) : "-";
+    bool anyAction = false;
+%>
+<a class="back" href="/service-requests">&larr; Back to Service Requests</a>
+<%c++ if (!successMessage.empty()) { %>
+<div class="flash" role="status">{% escape(successMessage) %}</div>
+<%c++ } %>
+<%c++ if (!errorMessage.empty()) { %>
+<div class="flash error" role="alert">{% escape(errorMessage) %}</div>
+<%c++ } %>
+<section class="card formcard">
+  <p class="eyebrow">Service Request #{% id %}</p>
+  <h1 class="serif">{% escape(r.getServiceType()) %}</h1>
+  <dl class="fields">
+    <dt>Service Request ID</dt><dd>{% id %}</dd>
+    <dt>Resident ID</dt><dd>{% r.getResidentId() %}</dd>
+    <dt>Service type</dt><dd>{% escape(r.getServiceType()) %}</dd>
+    <dt>Description</dt><dd class="long">{% escape(r.getDescription()) %}</dd>
+    <dt>Date requested</dt><dd>{% escape(r.getDateRequested()) %}</dd>
+    <dt>Status</dt><dd><span class="status {% csms::layout::statusClass(r.getStatus()) %}">{% escape(r.getStatus()) %}</span></dd>
+  </dl>
+  <div class="panel-actions">
+<%c++ for (const auto& action : workflowActions) {
+        // Only offer actions that T10 allows from the current status
+        if (!csms::ServiceRequestStatusService::isAllowedTransition(r.getStatus(), action.target)) continue;
+        anyAction = true;
+%>
+    <form method="POST" action="/service-requests/{% id %}/{% action.path %}">
+      <button class="btn {% action.style %}" type="submit">{% action.label %}</button>
+    </form>
+<%c++ } %>
+<%c++ if (!anyAction) { %>
+    <p class="hint">This request is {% escape(r.getStatus()) %}. It is closed and has no further actions.</p>
+<%c++ } %>
+  </div>
+</section>
+<%c++ } %>
+<%c++ $$ << csms::layout::pageEnd(); %>
