@@ -1,0 +1,85 @@
+<%inc
+#include <string>
+#include <vector>
+#include "models/Resident.h"
+#include "views/Layout.h"
+%>
+<%c++
+// T12 Resident Management page: list, search, and Edit/Deactivate actions.
+// Data: residents, search, successMessage (see ResidentController::index)
+using csms::layout::escape;
+const auto& residents = @@.get<std::vector<csms::Resident>>("residents");
+const auto& search = @@.get<std::string>("search");
+const auto& successMessage = @@.get<std::string>("successMessage");
+const bool searching = search.find_first_not_of(" \t\n\r\f\v") != std::string::npos;
+const std::string countText = std::to_string(residents.size()) + (residents.size() == 1 ? " resident" : " residents");
+$$ << csms::layout::pageStart("Resident Management", "residents");
+%>
+<div class="titlebar">
+  <div>
+    <p class="eyebrow">Community records</p>
+    <h1 class="serif">Resident Management</h1>
+<%c++ if (searching) { %>
+    <p class="sub">{% countText %} matching &ldquo;{% escape(search) %}&rdquo;</p>
+<%c++ } else { %>
+    <p class="sub">{% countText %} &middot; sorted by last name</p>
+<%c++ } %>
+  </div>
+  <a class="btn btn-primary" href="/residents/register">Register resident</a>
+</div>
+<%c++ if (!successMessage.empty()) { %>
+<div class="flash" role="status">{% escape(successMessage) %}</div>
+<%c++ } %>
+<section class="card">
+  <div class="toolbar">
+    <form class="search" method="GET" action="/residents" role="search">
+      <div class="field">
+        <label for="search">Search by first or last name</label>
+        <input type="search" id="search" name="search" value="{% escape(search) %}">
+      </div>
+      <button class="btn btn-dark" type="submit">Search</button>
+      <a class="btn btn-link" href="/residents">Clear search</a>
+    </form>
+  </div>
+<%c++ if (residents.empty()) { %>
+  <div class="empty">
+    <p class="empty-title">No Residents found.</p>
+<%c++ if (searching) { %>
+    <p class="hint">Try a different name, or clear the search to see everyone.</p>
+<%c++ } else { %>
+    <p class="hint">Register the first resident to get started.</p>
+<%c++ } %>
+  </div>
+<%c++ } else { %>
+  <table>
+    <caption class="sr-only">Residents</caption>
+    <thead><tr><th scope="col">ID</th><th scope="col">Name</th><th scope="col">Address</th><th scope="col">Contact number</th><th scope="col">Email</th><th scope="col">Status</th><th scope="col" class="actions">Actions</th></tr></thead>
+    <tbody>
+<%c++ for (const auto& r : residents) {
+    const std::string id = r.getId() ? std::to_string(*r.getId()) : "-";
+%>
+      <tr>
+        <td class="id" data-label="ID">{% id %}</td>
+        <td class="name" data-label="Name">{% escape(r.getFirstName()) %} {% escape(r.getLastName()) %}</td>
+        <td class="addr" data-label="Address">{% escape(r.getAddress()) %}</td>
+        <td class="nowrap" data-label="Contact">{% escape(r.getContactNumber()) %}</td>
+        <td class="email" data-label="Email">{% escape(r.getEmail()) %}</td>
+        <td class="nowrap" data-label="Status"><span class="status {% csms::layout::statusClass(r.getStatus()) %}">{% escape(r.getStatus()) %}</span></td>
+        <td class="actions" data-label="Actions">
+          <a class="btn btn-quiet btn-sm" href="/residents/{% id %}/edit">Edit</a>
+<%c++ if (r.getStatus() == "Active") { %>
+          <form method="POST" action="/residents/{% id %}/deactivate" onsubmit="return confirm('Deactivate this resident? Their record stays in the registry and will be marked Inactive.');">
+            <button class="btn btn-quiet btn-sm" type="submit">Deactivate</button>
+          </form>
+<%c++ } else { %>
+          <span class="muted-note">Deactivated</span>
+<%c++ } %>
+        </td>
+      </tr>
+<%c++ } %>
+    </tbody>
+  </table>
+  <div class="foot">Showing {% countText %}</div>
+<%c++ } %>
+</section>
+<%c++ $$ << csms::layout::pageEnd(); %>

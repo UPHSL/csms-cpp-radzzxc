@@ -1,8 +1,77 @@
 #include "ResidentController.h"
-#include "views/ResidentView.h"
+
+#include <utility>
+#include <vector>
 
 namespace csms
 {
+
+namespace
+{
+
+using Callback = std::function<void(const drogon::HttpResponsePtr&)>;
+
+// One form problem shown to the user: which field, and a readable message
+using FieldError = std::pair<std::string, std::string>;
+
+// Renders a CSP view (views/<name>.csp) with the given HTTP status
+void respondWithView(Callback& callback, const std::string& viewName, const drogon::HttpViewData& data,
+                     drogon::HttpStatusCode status = drogon::k200OK)
+{
+    auto resp = drogon::HttpResponse::newHttpViewResponse(viewName, data);
+    resp->setStatusCode(status);
+    callback(resp);
+}
+
+void respondNotFound(Callback& callback, const std::string& message)
+{
+    drogon::HttpViewData data;
+    data.insert("message", message);
+    respondWithView(callback, "ResidentNotFound", data, drogon::k404NotFound);
+}
+
+// Wording for T02 validation field names. The rules themselves stay in ResidentValidator.
+std::string describeError(const std::string& field)
+{
+    if (field == "firstName")     return "First name is required.";
+    if (field == "lastName")      return "Last name is required.";
+    if (field == "address")       return "Address is required.";
+    if (field == "contactNumber") return "Contact number must follow the format 09XXXXXXXXX.";
+    if (field == "email")         return "Email address is invalid (example: name@domain.com).";
+    if (field == "status")        return "Resident status is invalid.";
+    return field;
+}
+
+// View data for the five editable fields plus any validation errors
+drogon::HttpViewData formData(const std::string& firstName, const std::string& lastName, const std::string& address,
+                              const std::string& contactNumber, const std::string& email,
+                              const std::vector<std::string>& errorFields)
+{
+    std::vector<FieldError> errors;
+    for (const auto& field : errorFields)
+    {
+        errors.emplace_back(field, describeError(field));
+    }
+
+    drogon::HttpViewData data;
+    data.insert("firstName", firstName);
+    data.insert("lastName", lastName);
+    data.insert("address", address);
+    data.insert("contactNumber", contactNumber);
+    data.insert("email", email);
+    data.insert("errors", errors);
+    return data;
+}
+
+// Adds the read-only details shown at the top of the Edit page
+void addEditDetails(drogon::HttpViewData& data, const Resident& resident)
+{
+    data.insert("residentId", resident.getId() ? std::to_string(*resident.getId()) : std::string("-"));
+    data.insert("displayName", resident.getFirstName() + " " + resident.getLastName());
+    data.insert("status", resident.getStatus());
+}
+
+} // namespace
 
 ResidentController::ResidentController()
     : ResidentController(std::make_shared<ResidentRepository>("data/csms.db"))
@@ -54,26 +123,18 @@ void ResidentController::index(
         successMessage = "This resident is already inactive. No changes were made.";
     }
 
-    std::string html = ResidentView::renderIndex(residents, searchTerm, successMessage);
-
-    auto resp = drogon::HttpResponse::newHttpResponse();
-    resp->setStatusCode(drogon::k200OK);
-    resp->setContentTypeCode(drogon::CT_TEXT_HTML);
-    resp->setBody(std::move(html));
-    callback(resp);
+    drogon::HttpViewData data;
+    data.insert("residents", residents);
+    data.insert("search", searchTerm);
+    data.insert("successMessage", successMessage);
+    respondWithView(callback, "ResidentIndex", data);
 }
 
 void ResidentController::showRegisterForm(
     const drogon::HttpRequestPtr&,
     std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-    std::string html = ResidentView::renderRegisterForm();
-
-    auto resp = drogon::HttpResponse::newHttpResponse();
-    resp->setStatusCode(drogon::k200OK);
-    resp->setContentTypeCode(drogon::CT_TEXT_HTML);
-    resp->setBody(std::move(html));
-    callback(resp);
+    respondWithView(callback, "ResidentRegister", formData("", "", "", "", "", {}));
 }
 
 void ResidentController::registerResident(
@@ -98,21 +159,8 @@ void ResidentController::registerResident(
     }
 
     // Preserve entered non-sensitive values and display validation errors
-    ResidentView::FormState state;
-    state.firstName = firstName;
-    state.lastName = lastName;
-    state.address = address;
-    state.contactNumber = contactNumber;
-    state.email = email;
-    state.errors = result.errors;
-
-    std::string html = ResidentView::renderRegisterForm(state);
-
-    auto resp = drogon::HttpResponse::newHttpResponse();
-    resp->setStatusCode(drogon::k200OK);
-    resp->setContentTypeCode(drogon::CT_TEXT_HTML);
-    resp->setBody(std::move(html));
-    callback(resp);
+    respondWithView(callback, "ResidentRegister",
+                    formData(firstName, lastName, address, contactNumber, email, result.errors));
 }
 
 void ResidentController::showEditForm(
@@ -127,32 +175,23 @@ void ResidentController::showEditForm(
     }
     catch (...)
     {
-        auto resp = drogon::HttpResponse::newHttpResponse();
-        resp->setStatusCode(drogon::k404NotFound);
-        resp->setContentTypeCode(drogon::CT_TEXT_HTML);
-        resp->setBody(ResidentView::renderNotFound("Invalid resident identifier."));
-        callback(resp);
+        respondNotFound(callback, "Invalid resident identifier.");
         return;
     }
 
     auto residentOpt = repository_->findById(residentId);
     if (!residentOpt.has_value())
     {
-        auto resp = drogon::HttpResponse::newHttpResponse();
-        resp->setStatusCode(drogon::k404NotFound);
-        resp->setContentTypeCode(drogon::CT_TEXT_HTML);
-        resp->setBody(ResidentView::renderNotFound("The requested resident record could not be found."));
-        callback(resp);
+        respondNotFound(callback, "The requested resident record could not be found.");
         return;
     }
 
-    std::string html = ResidentView::renderEditForm(residentOpt.value());
-
-    auto resp = drogon::HttpResponse::newHttpResponse();
-    resp->setStatusCode(drogon::k200OK);
-    resp->setContentTypeCode(drogon::CT_TEXT_HTML);
-    resp->setBody(std::move(html));
-    callback(resp);
+    // Prefill the form with the persisted values
+    const Resident& resident = residentOpt.value();
+    auto data = formData(resident.getFirstName(), resident.getLastName(), resident.getAddress(),
+                         resident.getContactNumber(), resident.getEmail(), {});
+    addEditDetails(data, resident);
+    respondWithView(callback, "ResidentEdit", data);
 }
 
 void ResidentController::updateResident(
@@ -167,22 +206,14 @@ void ResidentController::updateResident(
     }
     catch (...)
     {
-        auto resp = drogon::HttpResponse::newHttpResponse();
-        resp->setStatusCode(drogon::k404NotFound);
-        resp->setContentTypeCode(drogon::CT_TEXT_HTML);
-        resp->setBody(ResidentView::renderNotFound("Invalid resident identifier."));
-        callback(resp);
+        respondNotFound(callback, "Invalid resident identifier.");
         return;
     }
 
     auto residentOpt = repository_->findById(residentId);
     if (!residentOpt.has_value())
     {
-        auto resp = drogon::HttpResponse::newHttpResponse();
-        resp->setStatusCode(drogon::k404NotFound);
-        resp->setContentTypeCode(drogon::CT_TEXT_HTML);
-        resp->setBody(ResidentView::renderNotFound("The requested resident record could not be found."));
-        callback(resp);
+        respondNotFound(callback, "The requested resident record could not be found.");
         return;
     }
 
@@ -204,22 +235,10 @@ void ResidentController::updateResident(
         return;
     }
 
-    // Preserve updated values and display validation errors
-    ResidentView::FormState state;
-    state.firstName = firstName;
-    state.lastName = lastName;
-    state.address = address;
-    state.contactNumber = contactNumber;
-    state.email = email;
-    state.errors = result.errors;
-
-    std::string html = ResidentView::renderEditForm(residentOpt.value(), state);
-
-    auto resp = drogon::HttpResponse::newHttpResponse();
-    resp->setStatusCode(drogon::k200OK);
-    resp->setContentTypeCode(drogon::CT_TEXT_HTML);
-    resp->setBody(std::move(html));
-    callback(resp);
+    // Show what the user typed, with validation errors; the heading/ID/status stay the persisted ones
+    auto data = formData(firstName, lastName, address, contactNumber, email, result.errors);
+    addEditDetails(data, residentOpt.value());
+    respondWithView(callback, "ResidentEdit", data);
 }
 
 void ResidentController::deactivateResident(
@@ -234,11 +253,7 @@ void ResidentController::deactivateResident(
     }
     catch (...)
     {
-        auto resp = drogon::HttpResponse::newHttpResponse();
-        resp->setStatusCode(drogon::k404NotFound);
-        resp->setContentTypeCode(drogon::CT_TEXT_HTML);
-        resp->setBody(ResidentView::renderNotFound("Invalid resident identifier."));
-        callback(resp);
+        respondNotFound(callback, "Invalid resident identifier.");
         return;
     }
 
@@ -246,11 +261,7 @@ void ResidentController::deactivateResident(
 
     if (result.notFound)
     {
-        auto resp = drogon::HttpResponse::newHttpResponse();
-        resp->setStatusCode(drogon::k404NotFound);
-        resp->setContentTypeCode(drogon::CT_TEXT_HTML);
-        resp->setBody(ResidentView::renderNotFound("The requested resident record could not be found."));
-        callback(resp);
+        respondNotFound(callback, "The requested resident record could not be found.");
         return;
     }
 

@@ -1,0 +1,60 @@
+<%inc
+#include <string>
+#include <utility>
+#include <vector>
+#include "views/Layout.h"
+%>
+<%c++
+// Sub-view shared by ResidentRegister and ResidentEdit: the five editable Resident inputs.
+// Each invalid field gets a red border and its own message. ID and status are never inputs.
+// Data: firstName, lastName, address, contactNumber, email, errors (field, readable message)
+using csms::layout::escape;
+const auto& errors = @@.get<std::vector<std::pair<std::string, std::string>>>("errors");
+
+struct Field { std::string name; std::string label; std::string type; std::string hint; std::string autocomplete; };
+// Fields grouped by row: two-field rows sit side by side
+const std::vector<std::vector<Field>> rows = {
+    {{"firstName", "First name", "text", "", "given-name"}, {"lastName", "Last name", "text", "", "family-name"}},
+    {{"address", "Address", "text", "", "street-address"}},
+    {{"contactNumber", "Contact number", "tel", "Format: 09XXXXXXXXX", "tel"}, {"email", "Email address", "email", "Example: name@domain.com", "email"}},
+};
+
+auto errorFor = [&](const std::string& field) {
+    for (const auto& e : errors) {
+        if (e.first == field) return e.second;
+    }
+    return std::string();
+};
+// aria attributes linking an input to its hint and error text
+auto ariaFor = [&](const Field& f, bool invalid) {
+    std::string describedBy = f.hint.empty() ? "" : f.name + "-hint";
+    if (invalid) describedBy += (describedBy.empty() ? "" : " ") + f.name + "-error";
+    std::string attrs = invalid ? " aria-invalid=\"true\"" : "";
+    if (!describedBy.empty()) attrs += " aria-describedby=\"" + describedBy + "\"";
+    return attrs;
+};
+
+for (const auto& row : rows) {
+    if (row.size() > 1) {
+%>
+<div class="grid2">
+<%c++ }
+    for (const auto& f : row) {
+        const std::string error = errorFor(f.name);
+        const std::string& value = @@.get<std::string>(f.name);
+%>
+<div class="f{% (error.empty() ? "" : " invalid") %}">
+  <label for="{% f.name %}">{% f.label %}</label>
+<%c++ if (!f.hint.empty()) { %>
+  <span class="hint" id="{% f.name %}-hint">{% f.hint %}</span>
+<%c++ } %>
+<%c++ if (!error.empty()) { %>
+  <span class="field-error" id="{% f.name %}-error">{% escape(error) %}</span>
+<%c++ } %>
+  <input type="{% f.type %}" id="{% f.name %}" name="{% f.name %}" value="{% escape(value) %}" autocomplete="{% f.autocomplete %}" required{% ariaFor(f, !error.empty()) %}>
+</div>
+<%c++ }
+    if (row.size() > 1) {
+%>
+</div>
+<%c++ } } %>
