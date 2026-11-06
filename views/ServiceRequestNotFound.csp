@@ -1,0 +1,16 @@
+<%inc
+#include <string>
+#include "views/Layout.h"
+%>
+<%c++
+// Controlled 404 page for unknown Service Request IDs. Data: message
+const auto& message = @@.get<std::string>("message");
+$$ << csms::layout::pageStart("Service Request not found", "service-requests");
+%>
+<section class="card notfound">
+  <p class="eyebrow">Error 404</p>
+  <h1 class="serif">Service Request not found</h1>
+  <p class="sub">{% csms::layout::escape(message) %}</p>
+  <a class="btn btn-primary" href="/service-requests">Back to Service Requests</a>
+</section>
+<%c++ $$ << csms::layout::pageEnd(); %>

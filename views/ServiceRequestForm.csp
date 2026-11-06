@@ -1,0 +1,97 @@
+<%inc
+#include <string>
+#include <utility>
+#include <vector>
+#include "views/Layout.h"
+%>
+<%c++
+// T13 Service Request submission form. ID and status are never asked for:
+// persistence generates the ID and new requests start as Pending (T08/T09).
+// Data: residentId, serviceType, description, dateRequested, errors (field, message)
+using csms::layout::escape;
+const auto& residentId = @@.get<std::string>("residentId");
+const auto& serviceType = @@.get<std::string>("serviceType");
+const auto& description = @@.get<std::string>("description");
+const auto& dateRequested = @@.get<std::string>("dateRequested");
+const auto& errors = @@.get<std::vector<std::pair<std::string, std::string>>>("errors");
+
+// Message for one field, or "" when that field has no problem
+auto errorFor = [&](const std::string& field) {
+    std::string message;
+    for (const auto& e : errors) {
+        if (e.first == field) message += (message.empty() ? "" : " ") + e.second;
+    }
+    return message;
+};
+// Extra attributes for an input: invalid marker and links to its hint/error text
+auto fieldAttrs = [&](const std::string& field, bool hasHint) {
+    const bool invalid = !errorFor(field).empty();
+    std::string describedBy = hasHint ? field + "-hint" : "";
+    if (invalid) describedBy += (describedBy.empty() ? "" : " ") + field + "-error";
+    std::string attrs = invalid ? " aria-invalid=\"true\"" : "";
+    if (!describedBy.empty()) attrs += " aria-describedby=\"" + describedBy + "\"";
+    return attrs;
+};
+const std::string residentIdError = errorFor("residentId");
+const std::string serviceTypeError = errorFor("serviceType");
+const std::string descriptionError = errorFor("description");
+const std::string dateError = errorFor("dateRequested");
+
+$$ << csms::layout::pageStart("Submit Service Request", "service-requests");
+%>
+<a class="back" href="/service-requests">&larr; Back to Service Requests</a>
+<section class="card formcard">
+  <p class="eyebrow">New request</p>
+  <h1 class="serif">Submit Service Request</h1>
+  <p class="hint">All fields are required. A Service Request ID is assigned automatically, and new requests start as Pending.</p>
+<%c++ if (!errors.empty()) { %>
+  <div class="errbox" role="alert">
+    <strong>Please fix the following:</strong>
+    <ul>
+<%c++ for (const auto& e : errors) { %>
+      <li><a href="#{% escape(e.first) %}">{% escape(e.second) %}</a></li>
+<%c++ } %>
+    </ul>
+  </div>
+<%c++ } %>
+  <form class="formgrid" method="POST" action="/service-requests" novalidate>
+    <div class="grid2">
+      <div class="f{% (residentIdError.empty() ? "" : " invalid") %}">
+        <label for="residentId">Resident ID</label>
+        <span class="hint" id="residentId-hint">The Resident must be registered and Active. <a href="/residents">Find a Resident ID</a></span>
+<%c++ if (!residentIdError.empty()) { %>
+        <span class="field-error" id="residentId-error">{% escape(residentIdError) %}</span>
+<%c++ } %>
+        <input type="text" inputmode="numeric" id="residentId" name="residentId" value="{% escape(residentId) %}" required{% fieldAttrs("residentId", true) %}>
+      </div>
+      <div class="f{% (dateError.empty() ? "" : " invalid") %}">
+        <label for="dateRequested">Date requested</label>
+        <span class="hint" id="dateRequested-hint">Format: YYYY-MM-DD</span>
+<%c++ if (!dateError.empty()) { %>
+        <span class="field-error" id="dateRequested-error">{% escape(dateError) %}</span>
+<%c++ } %>
+        <input type="date" id="dateRequested" name="dateRequested" value="{% escape(dateRequested) %}" required{% fieldAttrs("dateRequested", true) %}>
+      </div>
+    </div>
+    <div class="f{% (serviceTypeError.empty() ? "" : " invalid") %}">
+      <label for="serviceType">Service type</label>
+      <span class="hint" id="serviceType-hint">For example: Barangay Clearance, Certificate of Indigency</span>
+<%c++ if (!serviceTypeError.empty()) { %>
+      <span class="field-error" id="serviceType-error">{% escape(serviceTypeError) %}</span>
+<%c++ } %>
+      <input type="text" id="serviceType" name="serviceType" value="{% escape(serviceType) %}" required{% fieldAttrs("serviceType", true) %}>
+    </div>
+    <div class="f{% (descriptionError.empty() ? "" : " invalid") %}">
+      <label for="description">Description</label>
+<%c++ if (!descriptionError.empty()) { %>
+      <span class="field-error" id="description-error">{% escape(descriptionError) %}</span>
+<%c++ } %>
+      <textarea id="description" name="description" rows="5" required{% fieldAttrs("description", false) %}>{% escape(description) %}</textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Submit request</button>
+      <a class="btn btn-link" href="/service-requests">Cancel</a>
+    </div>
+  </form>
+</section>
+<%c++ $$ << csms::layout::pageEnd(); %>

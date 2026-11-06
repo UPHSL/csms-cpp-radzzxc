@@ -1,0 +1,24 @@
+<%inc
+#include "views/Layout.h"
+%>
+<%c++
+// T12 Register Resident form. ID and status are never asked for:
+// persistence generates the ID and new residents start as Active (T04).
+// Data: firstName, lastName, address, contactNumber, email, errors
+$$ << csms::layout::pageStart("Register resident", "residents");
+%>
+<a class="back" href="/residents">&larr; Back to residents</a>
+<section class="card formcard">
+  <p class="eyebrow">New record</p>
+  <h1 class="serif">Register resident</h1>
+  <p class="hint">All fields are required. A resident ID is assigned automatically, and new residents start as Active.</p>
+<%view ResidentErrorSummary %>
+  <form class="formgrid" method="POST" action="/residents/register" novalidate>
+<%view ResidentFormFields %>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save resident</button>
+      <a class="btn btn-link" href="/residents">Cancel</a>
+    </div>
+  </form>
+</section>
+<%c++ $$ << csms::layout::pageEnd(); %>

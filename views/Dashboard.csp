@@ -1,0 +1,114 @@
+<%inc
+#include <optional>
+#include <string>
+#include "models/ServiceRequest.h"
+#include "services/DashboardService.h"
+#include "views/Layout.h"
+%>
+<%c++
+// T14 CSMS Dashboard: read-only summary of Residents and Service Requests.
+// Data: summary (std::optional<DashboardSummary>, empty if loading failed), errorMessage
+// (see DashboardController::index). All numbers are computed by DashboardService; this page only shows them.
+using csms::layout::escape;
+const auto& summary = @@.get<std::optional<csms::DashboardSummary>>("summary");
+const auto& errorMessage = @@.get<std::string>("errorMessage");
+auto plural = [](int count, const std::string& one, const std::string& many) {
+    return std::to_string(count) + " " + (count == 1 ? one : many);
+};
+$$ << csms::layout::pageStart("Dashboard", "dashboard");
+%>
+<div class="titlebar">
+  <div>
+    <p class="eyebrow">Community services</p>
+    <h1 class="serif">CSMS Dashboard</h1>
+    <p class="sub">Current summary of Residents and Service Requests</p>
+  </div>
+</div>
+<%c++ if (!summary) { %>
+<section class="card notfound" role="alert">
+  <p class="eyebrow">Dashboard unavailable</p>
+  <h2 class="serif dash-title">The summary could not be shown</h2>
+  <p class="sub">{% escape(errorMessage) %}</p>
+  <a class="btn btn-primary" href="/dashboard">Try again</a>
+</section>
+<%c++ } else {
+    const auto& s = *summary;
+    const auto& recent = s.recentServiceRequests;
+%>
+<div class="dash-top">
+  <section class="card dash-card" aria-labelledby="residents-heading">
+    <div class="dash-head">
+      <h2 id="residents-heading" class="serif dash-title">Residents</h2>
+      <a class="btn btn-quiet btn-sm" href="/residents">Open Resident Management</a>
+    </div>
+    <dl class="stats">
+      <div class="stat total"><dt>Total Residents</dt><dd id="residents-total">{% s.totalResidents %}</dd></div>
+      <div class="stat"><dt><span class="status on">Active</span></dt><dd id="residents-active">{% s.activeResidents %}</dd></div>
+      <div class="stat"><dt><span class="status off">Inactive</span></dt><dd id="residents-inactive">{% s.inactiveResidents %}</dd></div>
+    </dl>
+    <p class="hint dash-note">Inactive residents stay on record, so they are part of the total.</p>
+  </section>
+
+  <section class="card dash-card open-card" aria-labelledby="open-heading">
+    <h2 id="open-heading" class="serif dash-title">Open Service Requests</h2>
+    <p class="open-value" id="requests-open">{% s.openServiceRequests %}</p>
+    <p class="hint dash-note">Pending ({% s.pendingServiceRequests %}) + In Progress ({% s.inProgressServiceRequests %}). Completed and Cancelled requests are closed.</p>
+    <div class="open-links">
+      <a class="btn btn-quiet btn-sm" href="/service-requests?status=Pending">View Pending</a>
+      <a class="btn btn-quiet btn-sm" href="/service-requests?status=In%20Progress">View In Progress</a>
+    </div>
+  </section>
+</div>
+
+<section class="card dash-card" aria-labelledby="requests-heading">
+  <div class="dash-head">
+    <h2 id="requests-heading" class="serif dash-title">Service Requests</h2>
+    <a class="btn btn-quiet btn-sm" href="/service-requests">Open Service Request Management</a>
+  </div>
+  <dl class="stats">
+    <div class="stat total"><dt>Total Service Requests</dt><dd id="requests-total">{% s.totalServiceRequests %}</dd></div>
+    <div class="stat"><dt><span class="status pending">Pending</span></dt><dd id="requests-pending">{% s.pendingServiceRequests %}</dd></div>
+    <div class="stat"><dt><span class="status progress">In Progress</span></dt><dd id="requests-in-progress">{% s.inProgressServiceRequests %}</dd></div>
+    <div class="stat"><dt><span class="status completed">Completed</span></dt><dd id="requests-completed">{% s.completedServiceRequests %}</dd></div>
+    <div class="stat"><dt><span class="status cancelled">Cancelled</span></dt><dd id="requests-cancelled">{% s.cancelledServiceRequests %}</dd></div>
+  </dl>
+</section>
+
+<section class="card" aria-labelledby="recent-heading">
+  <div class="recent-head">
+    <div>
+      <h2 id="recent-heading" class="serif dash-title">Recent Service Requests</h2>
+      <p class="sub">The {% csms::DashboardService::kRecentServiceRequestLimit %} newest requests, latest date first</p>
+    </div>
+    <a class="btn btn-quiet btn-sm" href="/service-requests">View all Service Requests</a>
+  </div>
+<%c++ if (recent.empty()) { %>
+  <div class="empty">
+    <p class="empty-title">No Service Requests available.</p>
+    <p class="hint">Submitted Service Requests will appear here, newest first.</p>
+  </div>
+<%c++ } else { %>
+  <table>
+    <caption class="sr-only">Recent Service Requests</caption>
+    <thead><tr><th scope="col">ID</th><th scope="col">Resident ID</th><th scope="col">Service type</th><th scope="col">Description</th><th scope="col">Date requested</th><th scope="col">Status</th><th scope="col" class="actions">Actions</th></tr></thead>
+    <tbody>
+<%c++ for (const auto& r : recent) {
+    const std::string id = r.getId() ? std::to_string(*r.getId()) : "-";
+%>
+      <tr>
+        <td class="id" data-label="ID">{% id %}</td>
+        <td class="nowrap" data-label="Resident ID">{% r.getResidentId() %}</td>
+        <td class="stype" data-label="Service type">{% escape(r.getServiceType()) %}</td>
+        <td class="desc" data-label="Description">{% escape(csms::layout::shorten(r.getDescription(), 50)) %}</td>
+        <td class="nowrap" data-label="Date requested">{% escape(r.getDateRequested()) %}</td>
+        <td class="nowrap" data-label="Status"><span class="status {% csms::layout::statusClass(r.getStatus()) %}">{% escape(r.getStatus()) %}</span></td>
+        <td class="actions" data-label="Actions"><a class="btn btn-sm btn-view" href="/service-requests/{% id %}">View</a></td>
+      </tr>
+<%c++ } %>
+    </tbody>
+  </table>
+  <div class="foot">Showing {% (static_cast<int>(recent.size()) == s.totalServiceRequests ? plural(s.totalServiceRequests, "service request", "service requests") : std::to_string(recent.size()) + " of " + plural(s.totalServiceRequests, "service request", "service requests")) %}</div>
+<%c++ } %>
+</section>
+<%c++ } %>
+<%c++ $$ << csms::layout::pageEnd(); %>
