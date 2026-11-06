@@ -214,8 +214,24 @@ DROGON_TEST(StatusFilterReturnsOnlyMatchingStatus)
 
     std::vector<csms::ServiceRequest> pendingResults = service.searchServiceRequests("", "Pending");
 
+    // Verify Pending filter
     CHECK(pendingResults.size() == 1);
     CHECK(pendingResults[0].getStatus() == "Pending");
+
+    // Verify In Progress filter
+    std::vector<csms::ServiceRequest> inProgressResults = service.searchServiceRequests("", "In Progress");
+    CHECK(inProgressResults.size() == 1);
+    CHECK(inProgressResults[0].getStatus() == "In Progress");
+
+    // Verify Completed filter
+    std::vector<csms::ServiceRequest> completedResults = service.searchServiceRequests("", "Completed");
+    CHECK(completedResults.size() == 1);
+    CHECK(completedResults[0].getStatus() == "Completed");
+
+    // Verify Cancelled filter
+    std::vector<csms::ServiceRequest> cancelledResults = service.searchServiceRequests("", "Cancelled");
+    CHECK(cancelledResults.size() == 1);
+    CHECK(cancelledResults[0].getStatus() == "Cancelled");
 
     // Unsupported status filter check
     bool threw = false;
