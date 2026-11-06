@@ -1,0 +1,29 @@
+<%inc
+#include <algorithm>
+#include <string>
+#include <utility>
+#include <vector>
+#include "views/Layout.h"
+%>
+<%c++
+// Sub-view shared by ResidentRegister and ResidentEdit: the "Please fix the following" box.
+// Data: errors (field, readable message) from ResidentController
+using csms::layout::escape;
+const auto& errors = @@.get<std::vector<std::pair<std::string, std::string>>>("errors");
+const std::vector<std::string> formFields = {"firstName", "lastName", "address", "contactNumber", "email"};
+if (!errors.empty()) {
+%>
+<div class="errbox" role="alert">
+  <strong>Please fix the following:</strong>
+  <ul>
+<%c++ for (const auto& e : errors) {
+    const bool linkable = std::find(formFields.begin(), formFields.end(), e.first) != formFields.end();
+    if (linkable) {
+%>
+    <li><a href="#{% escape(e.first) %}">{% escape(e.second) %}</a></li>
+<%c++ } else { %>
+    <li>{% escape(e.second) %}</li>
+<%c++ } } %>
+  </ul>
+</div>
+<%c++ } %>
