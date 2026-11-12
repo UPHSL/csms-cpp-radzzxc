@@ -17,6 +17,7 @@ add_executable(${PROJECT_NAME}
     test_resident_management_interface.cc
     test_service_request_management_interface.cc
     test_dashboard.cc
+    test_system_hardening.cc
     ../models/Resident.cc
     ../models/ResidentValidator.cc
     ../models/ServiceRequest.cc
