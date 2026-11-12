@@ -71,6 +71,29 @@ void addEditDetails(drogon::HttpViewData& data, const Resident& resident)
     data.insert("status", resident.getStatus());
 }
 
+// Parses a whole, positive number ("12" -> 12). Anything else ("", "12abc", "-3") -> nullopt.
+std::optional<int> parseId(const std::string& value)
+{
+    if (value.empty() || value.size() > 9)
+    {
+        return std::nullopt;
+    }
+    int result = 0;
+    for (char c : value)
+    {
+        if (c < '0' || c > '9')
+        {
+            return std::nullopt;
+        }
+        result = result * 10 + (c - '0');
+    }
+    if (result <= 0)
+    {
+        return std::nullopt;
+    }
+    return result;
+}
+
 } // namespace
 
 ResidentController::ResidentController()
@@ -168,16 +191,13 @@ void ResidentController::showEditForm(
     std::function<void(const drogon::HttpResponsePtr&)>&& callback,
     const std::string& idStr)
 {
-    int residentId = -1;
-    try
-    {
-        residentId = std::stoi(idStr);
-    }
-    catch (...)
+    auto idOpt = parseId(idStr);
+    if (!idOpt.has_value())
     {
         respondNotFound(callback, "Invalid resident identifier.");
         return;
     }
+    int residentId = idOpt.value();
 
     auto residentOpt = repository_->findById(residentId);
     if (!residentOpt.has_value())
@@ -199,16 +219,13 @@ void ResidentController::updateResident(
     std::function<void(const drogon::HttpResponsePtr&)>&& callback,
     const std::string& idStr)
 {
-    int residentId = -1;
-    try
-    {
-        residentId = std::stoi(idStr);
-    }
-    catch (...)
+    auto idOpt = parseId(idStr);
+    if (!idOpt.has_value())
     {
         respondNotFound(callback, "Invalid resident identifier.");
         return;
     }
+    int residentId = idOpt.value();
 
     auto residentOpt = repository_->findById(residentId);
     if (!residentOpt.has_value())
@@ -246,16 +263,13 @@ void ResidentController::deactivateResident(
     std::function<void(const drogon::HttpResponsePtr&)>&& callback,
     const std::string& idStr)
 {
-    int residentId = -1;
-    try
-    {
-        residentId = std::stoi(idStr);
-    }
-    catch (...)
+    auto idOpt = parseId(idStr);
+    if (!idOpt.has_value())
     {
         respondNotFound(callback, "Invalid resident identifier.");
         return;
     }
+    int residentId = idOpt.value();
 
     auto result = deactivationService_->deactivateResident(residentId);
 
