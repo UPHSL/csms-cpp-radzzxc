@@ -6,9 +6,9 @@
 
 This repository is the C++ implementation of the Community Services Management System for the Programming Languages Laboratory.
 
-- **Current Sprint:** Sprint 2 – Resident Management Foundation
+- **Current Sprint:** Sprint 6 - Final Release
 - **Technology Stack:** C++20, Drogon Web Framework, SQLite3, CMake, CTest
-- **Current Version:** `0.1.0`
+- **Current Version:** `1.0.0`
 
 ---
 
@@ -73,7 +73,7 @@ Expected response for `/health`:
 {
   "application": "Community Services Management System",
   "status": "ok",
-  "version": "0.1.0"
+  "version": "1.0.0"
 }
 ```
 
@@ -89,11 +89,13 @@ ctest --test-dir build --output-on-failure
 ---
 
 ## Completed Sprints & Tickets
-
-- **Sprint 0: Developer Onboarding** — Established C++ Drogon toolchain, test runner, and `/health` endpoint.
-- **Sprint 1 - T01: Resident Domain Model** — Implemented in-memory `Resident` model with unassigned ID representation (`std::optional<int>`) and default `Active` status.
-- **Sprint 1 - T02: Resident Validation** — Implemented `ResidentValidator` enforcing required fields, whitespace rejection, `09XXXXXXXXX` contact format, and email syntax.
-- **Sprint 2 - T03: Establish Resident Persistence** — Implemented file-backed SQLite persistence with `DatabaseConnection`, `ResidentRepository`, prepared statements, and auto-generated IDs.
+- **Sprint 0: Developer Onboarding:** Established C++ Drogon toolchain, test runner, and `/health` endpoint.
+- **Sprint 1: Resident Domain & Validation (T01, T02):** Implemented in-memory `Resident` model and `ResidentValidator`.
+- **Sprint 2: Resident Persistence & Services (T03, T04, T05):** SQLite persistence, registration, search, and listing services.
+- **Sprint 3: Resident Updates, Deactivation & Service Request Foundation (T06, T07, T08):** Information update, soft deactivation, and `ServiceRequest` model.
+- **Sprint 4: Service Request Workflow, Management & Views (T09, T10, T11, T12, T13):** Submission, status transitions, search/filter, and native CSP views.
+- **Sprint 5: Dashboard & System Hardening (T14, T15):** SQLite aggregation metrics, defensive route parsing, and 165 regression tests.
+- **Sprint 6: Final Release & System Verification (T16):** Single source of truth versioning, final integration test, release documentation, and CSMS v1.0.0 release.
 
 ---
 
@@ -105,5 +107,6 @@ For further details, refer to the documents in the `docs/` folder:
 - [Git Cheatsheet](docs/git-cheatsheet.md)
 - [Release Workflow](docs/release-workflow.md)
 - [Preliminary Checkpoint Deliverable](docs/prelim-checkpoint.md)
-
+- [Release Notes v1.0.0](docs/release-v1.0.0.md)
+- [Final Checkpoint Deliverable](docs/final-checkpoint.md)
 

@@ -1,4 +1,5 @@
 #include "HomeController.h"
+#include "Version.h"
 
 void HomeController::asyncHandleHttpRequest(
     const HttpRequestPtr&,
@@ -119,7 +120,7 @@ void HomeController::asyncHandleHttpRequest(
         <section class="details">
             <div class="detail">
                 <strong>Current Sprint</strong>
-                Sprint 0 - Developer Onboarding
+                Sprint 6 - Final Release
             </div>
 
             <div class="detail">
@@ -129,7 +130,7 @@ void HomeController::asyncHandleHttpRequest(
 
             <div class="detail">
                 <strong>Version</strong>
-                0.1.0
+                )" + std::string(csms::Version::kShortName) + " " + std::string(csms::Version::kDisplayVersion) + R"(
             </div>
         </section>
 

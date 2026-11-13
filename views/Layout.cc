@@ -1,5 +1,6 @@
 #include "Layout.h"
 #include <sstream>
+#include "Version.h"
 
 namespace csms::layout
 {
@@ -202,7 +203,9 @@ std::string pageStart(const std::string& pageTitle, const std::string& activeNav
        << "</head>\n"
        << "<body>\n"
        << "<header class=\"topbar\"><div class=\"wrap\">\n"
-       << "  <a class=\"brand\" href=\"/\"><b>CSMS</b><span>Community Services Management System</span></a>\n"
+       << "  <a class=\"brand\" href=\"/\"><b>" << csms::Version::kShortName 
+       << "</b><span>" << csms::Version::kApplication << "</span> <span style=\"font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #e0d7c8; color: var(--ink);\">" 
+       << csms::Version::kDisplayVersion << "</span></a>\n"
        << "  <nav class=\"nav\" aria-label=\"Main\">\n"
        << navLink("dashboard", "/dashboard", "Dashboard")
        << navLink("residents", "/residents", "Residents")
@@ -215,7 +218,14 @@ std::string pageStart(const std::string& pageTitle, const std::string& activeNav
 
 std::string pageEnd()
 {
-    return "</main>\n</body>\n</html>\n";
+    std::ostringstream ss;
+    ss << "</main>\n"
+       << "<footer class=\"foot wrap\" style=\"border-top: 1px solid var(--line); margin-top: 36px; padding: 20px 0; color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;\">\n"
+       << "  <span>" << csms::Version::kApplication << "</span>\n"
+       << "  <span>Release " << csms::Version::kDisplayVersion << "</span>\n"
+       << "</footer>\n"
+       << "</body>\n</html>\n";
+    return ss.str();
 }
 
 std::string escape(const std::string& input)
