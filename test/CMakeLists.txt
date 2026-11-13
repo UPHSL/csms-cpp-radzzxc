@@ -18,6 +18,7 @@ add_executable(${PROJECT_NAME}
     test_service_request_management_interface.cc
     test_dashboard.cc
     test_system_hardening.cc
+    test_final_release.cc
     ../models/Resident.cc
     ../models/ResidentValidator.cc
     ../models/ServiceRequest.cc
@@ -36,6 +37,7 @@ add_executable(${PROJECT_NAME}
     ../controllers/ResidentController.cc
     ../controllers/ServiceRequestController.cc
     ../controllers/DashboardController.cc
+    ../controllers/HealthController.cc
     ../views/Layout.cc
 )
 
