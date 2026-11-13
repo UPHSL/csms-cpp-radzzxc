@@ -1,0 +1,16 @@
+<%inc
+#include <string>
+#include "views/Layout.h"
+%>
+<%c++
+// Controlled 404 page for unknown or invalid Resident IDs. Data: message
+const auto& message = @@.get<std::string>("message");
+$$ << csms::layout::pageStart("Resident not found", "residents");
+%>
+<section class="card notfound">
+  <p class="eyebrow">Error 404</p>
+  <h1 class="serif">Resident not found</h1>
+  <p class="sub">{% csms::layout::escape(message) %}</p>
+  <a class="btn btn-primary" href="/residents">Back to residents</a>
+</section>
+<%c++ $$ << csms::layout::pageEnd(); %>

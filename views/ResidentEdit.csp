@@ -1,0 +1,32 @@
+<%inc
+#include <string>
+#include "views/Layout.h"
+%>
+<%c++
+// T12 Edit Resident form. Resident ID and status are shown read-only (T06 preserves both).
+// Data: residentId, displayName, status, firstName, lastName, address, contactNumber, email, errors
+using csms::layout::escape;
+const auto& residentId = @@.get<std::string>("residentId");
+const auto& displayName = @@.get<std::string>("displayName");
+const auto& status = @@.get<std::string>("status");
+$$ << csms::layout::pageStart("Edit resident", "residents");
+%>
+<a class="back" href="/residents">&larr; Back to residents</a>
+<section class="card formcard">
+  <p class="eyebrow">Edit resident</p>
+  <h1 class="serif">{% escape(displayName) %}</h1>
+  <dl class="meta">
+    <div><dt>Resident ID</dt><dd>{% escape(residentId) %}</dd></div>
+    <div><dt>Status</dt><dd><span class="status {% csms::layout::statusClass(status) %}">{% escape(status) %}</span></dd></div>
+  </dl>
+  <p class="hint">Resident ID and status cannot be changed here.</p>
+<%view ResidentErrorSummary %>
+  <form class="formgrid" method="POST" action="/residents/{% escape(residentId) %}/edit" novalidate>
+<%view ResidentFormFields %>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save changes</button>
+      <a class="btn btn-link" href="/residents">Cancel</a>
+    </div>
+  </form>
+</section>
+<%c++ $$ << csms::layout::pageEnd(); %>

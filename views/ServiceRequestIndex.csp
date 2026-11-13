@@ -1,0 +1,111 @@
+<%inc
+#include <string>
+#include <vector>
+#include "models/ServiceRequest.h"
+#include "services/ServiceRequestStatusService.h"
+#include "views/Layout.h"
+%>
+<%c++
+// T13 Service Request Management page: list, text search, status filter, workflow actions.
+// Data: requests, search, status, successMessage, errorMessage (see ServiceRequestController::index)
+using csms::layout::escape;
+const auto& requests = @@.get<std::vector<csms::ServiceRequest>>("requests");
+const auto& search = @@.get<std::string>("search");
+const auto& status = @@.get<std::string>("status");
+const auto& successMessage = @@.get<std::string>("successMessage");
+const auto& errorMessage = @@.get<std::string>("errorMessage");
+const bool filtering = search.find_first_not_of(" \t\r\n") != std::string::npos || !status.empty();
+const std::string countText = std::to_string(requests.size()) + (requests.size() == 1 ? " service request" : " service requests");
+const std::vector<std::string> statusOptions = {"Pending", "In Progress", "Completed", "Cancelled"};
+struct WorkflowAction { std::string path; std::string label; std::string target; };
+const std::vector<WorkflowAction> workflowActions = {
+    {"start", "Start Processing", "In Progress"},
+    {"complete", "Complete", "Completed"},
+    {"cancel", "Cancel", "Cancelled"},
+};
+$$ << csms::layout::pageStart("Service Request Management", "service-requests");
+%>
+<div class="titlebar">
+  <div>
+    <p class="eyebrow">Community services</p>
+    <h1 class="serif">Service Request Management</h1>
+<%c++ if (filtering) { %>
+    <p class="sub">{% countText %} match the current search</p>
+<%c++ } else { %>
+    <p class="sub">{% countText %} &middot; newest first</p>
+<%c++ } %>
+  </div>
+  <a class="btn btn-primary" href="/service-requests/new">Submit Service Request</a>
+</div>
+<%c++ if (!successMessage.empty()) { %>
+<div class="flash" role="status">{% escape(successMessage) %}</div>
+<%c++ } %>
+<%c++ if (!errorMessage.empty()) { %>
+<div class="flash error" role="alert">{% escape(errorMessage) %}</div>
+<%c++ } %>
+<section class="card">
+  <div class="toolbar">
+    <form class="search" method="GET" action="/service-requests" role="search">
+      <div class="field">
+        <label for="search">Search service type or description</label>
+        <input type="search" id="search" name="search" value="{% escape(search) %}">
+      </div>
+      <div class="field">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          <option value=""{% (status.empty() ? " selected" : "") %}>All Statuses</option>
+<%c++ for (const auto& option : statusOptions) { %>
+          <option value="{% escape(option) %}"{% (option == status ? " selected" : "") %}>{% escape(option) %}</option>
+<%c++ } %>
+        </select>
+      </div>
+      <button class="btn btn-dark" type="submit">Search</button>
+      <a class="btn btn-link" href="/service-requests">Clear</a>
+    </form>
+  </div>
+<%c++ if (requests.empty()) { %>
+  <div class="empty">
+    <p class="empty-title">No Service Requests found.</p>
+<%c++ if (filtering) { %>
+    <p class="hint">Try a different search or status, or clear the filters to see every request.</p>
+<%c++ } else { %>
+    <p class="hint">Submit the first Service Request to get started.</p>
+<%c++ } %>
+  </div>
+<%c++ } else { %>
+  <table>
+    <caption class="sr-only">Service Requests</caption>
+    <thead><tr><th scope="col">ID</th><th scope="col">Resident ID</th><th scope="col">Service type</th><th scope="col">Description</th><th scope="col">Date requested</th><th scope="col">Status</th><th scope="col" class="actions">Actions</th></tr></thead>
+    <tbody>
+<%c++ for (const auto& r : requests) {
+    const std::string id = r.getId() ? std::to_string(*r.getId()) : "-";
+%>
+      <tr>
+        <td class="id" data-label="ID">{% id %}</td>
+        <td class="nowrap" data-label="Resident ID">{% r.getResidentId() %}</td>
+        <td class="stype" data-label="Service type">{% escape(r.getServiceType()) %}</td>
+        <td class="desc" data-label="Description">{% escape(csms::layout::shorten(r.getDescription(), 50)) %}</td>
+        <td class="nowrap" data-label="Date requested">{% escape(r.getDateRequested()) %}</td>
+        <td class="nowrap" data-label="Status"><span class="status {% csms::layout::statusClass(r.getStatus()) %}">{% escape(r.getStatus()) %}</span></td>
+        <td class="actions" data-label="Actions">
+          <div class="workflow">
+            <a class="btn btn-sm btn-view" href="/service-requests/{% id %}">View</a>
+<%c++ for (const auto& action : workflowActions) {
+        // Only offer actions that T10 allows from the current status
+        if (!csms::ServiceRequestStatusService::isAllowedTransition(r.getStatus(), action.target)) continue;
+%>
+            <form method="POST" action="/service-requests/{% id %}/{% action.path %}">
+              <input type="hidden" name="returnTo" value="list">
+              <button class="btn btn-quiet btn-sm" type="submit">{% action.label %}</button>
+            </form>
+<%c++ } %>
+          </div>
+        </td>
+      </tr>
+<%c++ } %>
+    </tbody>
+  </table>
+  <div class="foot">Showing {% countText %}</div>
+<%c++ } %>
+</section>
+<%c++ $$ << csms::layout::pageEnd(); %>

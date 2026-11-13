@@ -1,4 +1,5 @@
 #include "HomeController.h"
+#include "Version.h"
 
 void HomeController::asyncHandleHttpRequest(
     const HttpRequestPtr&,
@@ -77,6 +78,32 @@ void HomeController::asyncHandleHttpRequest(
             margin-bottom: 0;
             font-weight: 700;
         }
+
+        .actions {
+            margin-top: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 22px;
+            border-radius: 999px;
+            background: #a8492a;
+            color: white;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .button:hover {
+            background: #8f3c21;
+        }
+
+        .button:focus-visible {
+            outline: 3px solid #111;
+            outline-offset: 3px;
+        }
     </style>
 </head>
 
@@ -93,7 +120,7 @@ void HomeController::asyncHandleHttpRequest(
         <section class="details">
             <div class="detail">
                 <strong>Current Sprint</strong>
-                Sprint 0 - Developer Onboarding
+                Sprint 6 - Final Release
             </div>
 
             <div class="detail">
@@ -103,11 +130,17 @@ void HomeController::asyncHandleHttpRequest(
 
             <div class="detail">
                 <strong>Version</strong>
-                0.1.0
+                )" + std::string(csms::Version::kShortName) + " " + std::string(csms::Version::kDisplayVersion) + R"(
             </div>
         </section>
 
         <p class="status">Environment status: Ready</p>
+
+        <p class="actions">
+            <a class="button" href="/dashboard">Open Dashboard</a>
+            <a class="button" href="/residents">Open Resident Management</a>
+            <a class="button" href="/service-requests">Open Service Request Management</a>
+        </p>
     </main>
 </body>
 </html>
